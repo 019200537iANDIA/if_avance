@@ -1,0 +1,123 @@
+name: Flutter CI
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  test:
+    name: Ejecutar Tests
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v3
+    
+    - name: Configurar Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+    
+    - name: Configurar Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.16.0'
+        channel: 'stable'
+    
+    - name: Verificar versión de Flutter
+      run: flutter --version
+    
+    - name: Instalar dependencias
+      run: flutter pub get
+    
+    - name: Analizar código
+      run: flutter analyze
+    
+    - name: Verificar formato
+      run: flutter format --set-exit-if-changed .
+    
+    - name: Ejecutar tests unitarios
+      run: flutter test --coverage
+    
+    - name: Subir reporte de cobertura
+      uses: codecov/codecov-action@v3
+      with:
+        files: ./coverage/lcov.info
+        flags: unittests
+        name: codecov-umbrella
+    
+    - name: Ejecutar tests de integración
+      uses: reactivecircus/android-emulator-runner@v2
+      with:
+        api-level: 29
+        script: flutter test integration_test/
+
+  build_android:
+    name: Build Android APK
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v3
+    
+    - name: Configurar Java
+      uses: actions/setup-java@v3
+      with:
+        distribution: 'zulu'
+        java-version: '17'
+    
+    - name: Configurar Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.16.0'
+        channel: 'stable'
+    
+    - name: Instalar dependencias
+      run: flutter pub get
+    
+    - name: Build APK
+      run: flutter build apk --release
+    
+    - name: Subir APK como artefacto
+      uses: actions/upload-artifact@v3
+      with:
+        name: app-release
+        path: build/app/outputs/flutter-apk/app-release.apk
+
+  build_ios:
+    name: Build iOS IPA
+    needs: test
+    runs-on: macos-latest
+    
+    steps:
+    - name: Checkout código
+      uses: actions/checkout@v3
+    
+    - name: Configurar Flutter
+      uses: subosito/flutter-action@v2
+      with:
+        flutter-version: '3.16.0'
+        channel: 'stable'
+    
+    - name: Instalar dependencias
+      run: flutter pub get
+    
+    - name: Build iOS (sin firmar)
+      run: flutter build ios --release --no-codesign
+    
+    - name: Comprimir app iOS
+      run: |
+        cd build/ios/iphoneos
+        mkdir Payload
+        cp -r Runner.app Payload/
+        zip -r app-release.ipa Payload
+    
+    - name: Subir IPA como artefacto
+      uses: actions/upload-artifact@v3
+      with:
+        name: app-ios-release
+        path: build/ios/iphoneos/app-release.ipa
