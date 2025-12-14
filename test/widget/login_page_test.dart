@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:primeros_auxilios_app/pages/login_page.dart';
-import 'package:primeros_auxilios_app/services/auth_service.dart';
+import 'package:if_avance/screens/login_page.dart';
+import 'package:if_avance/services/auth_service.dart';
 
 class MockAuthService extends Mock implements AuthService {}
 

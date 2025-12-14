@@ -16,24 +16,56 @@ import 'package:cloud_firestore/cloud_firestore.dart';   // Base de datos NoSQL
 /// 1. Firebase Auth: Autenticación y gestión de sesiones
 /// 2. Google Sign-In: Autenticación OAuth con Google
 /// 3. Cloud Firestore: Almacenamiento de datos adicionales de usuario
+/// 
+/// IMPORTANTE: Usa inyección de dependencias para facilitar testing
 class AuthService {
   /// Instancia de Firebase Authentication
   /// 
   /// Gestiona las cuentas de usuario, sesiones y tokens de autenticación.
   /// Maneja tanto email/password como proveedores externos (Google).
-  final FirebaseAuth _auth = FirebaseAuth.instance;
+  final FirebaseAuth _auth;
   
   /// Instancia de Google Sign-In
   /// 
   /// Implementa el flujo OAuth 2.0 de Google.
   /// Permite iniciar sesión con cuentas de Google existentes.
-  final GoogleSignIn _googleSignIn = GoogleSignIn();
+  final GoogleSignIn _googleSignIn;
   
   /// Instancia de Cloud Firestore
   /// 
   /// Base de datos NoSQL donde almacenamos datos adicionales de usuario
   /// que Firebase Auth no gestiona (nombre, teléfono, rol de admin, etc.)
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
+
+  /// Constructor con inyección de dependencias
+  /// 
+  /// Permite pasar instancias personalizadas para testing (mocks).
+  /// Si no se proporcionan parámetros, usa las instancias por defecto.
+  /// 
+  /// Parámetros opcionales:
+  /// - [auth]: Instancia de FirebaseAuth (default: FirebaseAuth.instance)
+  /// - [firestore]: Instancia de Firestore (default: FirebaseFirestore.instance)
+  /// - [googleSignIn]: Instancia de GoogleSignIn (default: GoogleSignIn())
+  /// 
+  /// Ejemplo para producción:
+  /// ```dart
+  /// final authService = AuthService(); // Usa instancias por defecto
+  /// ```
+  /// 
+  /// Ejemplo para testing:
+  /// ```dart
+  /// final authService = AuthService(
+  ///   auth: mockAuth,
+  ///   firestore: fakeFirestore,
+  /// );
+  /// ```
+  AuthService({
+    FirebaseAuth? auth,
+    FirebaseFirestore? firestore,
+    GoogleSignIn? googleSignIn,
+  })  : _auth = auth ?? FirebaseAuth.instance,
+        _firestore = firestore ?? FirebaseFirestore.instance,
+        _googleSignIn = googleSignIn ?? GoogleSignIn();
 
   /// Obtiene el usuario actualmente autenticado
   /// 
@@ -299,14 +331,19 @@ class AuthService {
     // Si no hay usuario autenticado, no puede ser admin
     if (currentUser == null) return false;
     
-    // Consulta el documento del usuario en Firestore
-    final doc = await _firestore
-        .collection('users')
-        .doc(currentUser!.uid)
-        .get();
-    
-    // Extrae el campo isAdmin o retorna false si no existe
-    return doc.data()?['isAdmin'] ?? false;
+    try {
+      // Consulta el documento del usuario en Firestore
+      final doc = await _firestore
+          .collection('users')
+          .doc(currentUser!.uid)
+          .get();
+      
+      // Extrae el campo isAdmin o retorna false si no existe
+      return doc.data()?['isAdmin'] ?? false;
+    } catch (e) {
+      print('Error verificando admin: $e');
+      return false;
+    }
   }
 
   /// Obtiene todos los datos del perfil del usuario actual
@@ -331,13 +368,18 @@ class AuthService {
     // Si no hay usuario autenticado, no hay datos
     if (currentUser == null) return null;
     
-    // Obtiene el documento del usuario
-    final doc = await _firestore
-        .collection('users')
-        .doc(currentUser!.uid)
-        .get();
-    
-    // Retorna los datos como mapa o null si no existe
-    return doc.data();
+    try {
+      // Obtiene el documento del usuario
+      final doc = await _firestore
+          .collection('users')
+          .doc(currentUser!.uid)
+          .get();
+      
+      // Retorna los datos como mapa o null si no existe
+      return doc.data();
+    } catch (e) {
+      print('Error obteniendo datos de usuario: $e');
+      return null;
+    }
   }
 }

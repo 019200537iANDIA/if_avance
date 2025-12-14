@@ -1,7 +1,7 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
-import 'package:primeros_auxilios_app/services/guide_service.dart';
-import 'package:primeros_auxilios_app/models/guide.dart';
+import 'package:if_avance/services/guide_service.dart';
+import 'package:if_avance/models/guide.dart';
 
 void main() {
   late GuideService guideService;
@@ -9,7 +9,7 @@ void main() {
 
   setUp(() {
     fakeFirestore = FakeFirebaseFirestore();
-    guideService = GuideService();
+    guideService = GuideService(firestore: fakeFirestore);
   });
 
   group('GuideService Tests', () {

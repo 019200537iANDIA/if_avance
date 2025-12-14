@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:primeros_auxilios_app/pages/signup_page.dart';
+import 'package:if_avance/screens/signup_page.dart';
 
 void main() {
   Widget createSignupPage() {

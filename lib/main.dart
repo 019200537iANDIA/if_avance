@@ -1,81 +1,149 @@
 // Importaciones necesarias para el funcionamiento de la aplicación
-import 'package:flutter/material.dart';           // Framework de UI de Flutter
-import 'package:firebase_core/firebase_core.dart'; // Inicialización de Firebase
-import 'screens/login_page.dart';                  // Pantalla de inicio de sesión
-import 'screens/signup_page.dart';                 // Pantalla de registro
-import 'screens/home_page.dart';                   // Pantalla principal
-import 'screens/profile_page.dart';                // Pantalla de perfil de usuario
-import 'screens/admin_panel.dart';                 // Panel de administración
-import 'services/guide_service.dart';              // Servicio para gestionar guías de primeros auxilios
+import 'package:flutter/material.dart';
+import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_crashlytics/firebase_crashlytics.dart';
+import 'package:firebase_analytics/firebase_analytics.dart';
+import 'dart:async';
+
+// Importaciones de pantallas
+import 'screens/login_page.dart';
+import 'screens/signup_page.dart';
+import 'screens/home_page.dart';
+import 'screens/profile_page.dart';
+import 'screens/admin_panel.dart';
+
+// Importación de servicios
+import 'services/guide_service.dart';
 
 /// Función principal de la aplicación - Punto de entrada
-/// Esta función se ejecuta al iniciar la aplicación y configura
-/// todos los servicios necesarios antes de mostrar la interfaz
+/// 
+/// Configura Firebase, Crashlytics, Analytics y carga las guías predeterminadas
+/// antes de iniciar la aplicación.
 void main() async {
-  // Asegura que los enlaces de widgets estén inicializados antes de usar
-  // funcionalidades asíncronas o plugins nativos
+  // Asegura que los enlaces de widgets estén inicializados
   WidgetsFlutterBinding.ensureInitialized();
   
-  // Inicializa Firebase para permitir autenticación y base de datos
-  await Firebase.initializeApp();
+  try {
+    // Inicializa Firebase
+    await Firebase.initializeApp();
+    
+    // Configurar Crashlytics para capturar errores de Flutter
+    FlutterError.onError = (errorDetails) {
+      FirebaseCrashlytics.instance.recordFlutterFatalError(errorDetails);
+    };
+    
+    // Capturar errores asíncronos no manejados
+    PlatformDispatcher.instance.onError = (error, stack) {
+      FirebaseCrashlytics.instance.recordError(error, stack, fatal: true);
+      return true;
+    };
+    
+    // Carga las guías de primeros auxilios predeterminadas
+    await GuideService().initializeDefaultGuides();
+    
+  } catch (e, stackTrace) {
+    // Registrar error de inicialización
+    debugPrint('Error en inicialización: $e');
+    FirebaseCrashlytics.instance.recordError(e, stackTrace);
+  }
   
-  // Carga las guías de primeros auxilios predeterminadas en la base de datos
-  // Esto asegura que la app tenga contenido básico disponible desde el inicio
-  await GuideService().initializeDefaultGuides();
-  
-  // Ejecuta la aplicación principal
-  runApp(const FirstAidApp());
+  // Ejecuta la aplicación
+  runApp(const PrimerosAuxiliosApp());
 }
 
 /// Widget raíz de la aplicación de Primeros Auxilios
 /// 
-/// Esta clase configura la estructura general de la aplicación incluyendo:
-/// - El tema visual
-/// - El sistema de navegación por rutas
-/// - Las páginas disponibles
-class FirstAidApp extends StatelessWidget {
+/// Configura:
+/// - Tema visual con Material Design
+/// - Sistema de navegación por rutas
+/// - Firebase Analytics para seguimiento de navegación
+/// - Todas las páginas disponibles
+class PrimerosAuxiliosApp extends StatelessWidget {
   /// Constructor constante para optimización de rendimiento
-  const FirstAidApp({super.key});
+  const PrimerosAuxiliosApp({super.key});
+  
+  /// Instancia de Firebase Analytics para métricas
+  static FirebaseAnalytics analytics = FirebaseAnalytics.instance;
+  
+  /// Observer para rastrear navegación entre pantallas
+  static FirebaseAnalyticsObserver observer = 
+      FirebaseAnalyticsObserver(analytics: analytics);
 
-  /// Construye el widget raíz de la aplicación
-  /// 
-  /// Retorna un [MaterialApp] que implementa Material Design y
-  /// configura todas las rutas de navegación de la aplicación
   @override
   Widget build(BuildContext context) {
     return MaterialApp(
       // Oculta el banner "DEBUG" en la esquina superior derecha
       debugShowCheckedModeBanner: false,
       
-      // Título de la aplicación (aparece en el administrador de tareas)
-      title: 'First Aid App',
+      // Título de la aplicación
+      title: 'Primeros Auxilios',
       
-      // Configuración del tema visual de la aplicación
-      // El color verde representa salud, seguridad y urgencia médica
-      theme: ThemeData(primarySwatch: Colors.green),
+      // Configuración del tema visual
+      // Verde representa salud, seguridad y urgencia médica
+      theme: ThemeData(
+        primarySwatch: Colors.green,
+        // Configuración adicional de tema
+        appBarTheme: const AppBarTheme(
+          elevation: 2,
+          centerTitle: true,
+        ),
+        cardTheme: CardTheme(
+          elevation: 4,
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(12),
+          ),
+        ),
+        // Configuración de botones elevados
+        elevatedButtonTheme: ElevatedButtonThemeData(
+          style: ElevatedButton.styleFrom(
+            padding: const EdgeInsets.symmetric(vertical: 16),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+          ),
+        ),
+      ),
       
-      // Ruta inicial que se muestra al abrir la aplicación
-      // En este caso, la pantalla de login
+      // Observer de Analytics para rastrear navegación
+      navigatorObservers: [observer],
+      
+      // Ruta inicial: Pantalla de login
       initialRoute: '/',
       
-      // Definición de todas las rutas disponibles en la aplicación
-      // Cada ruta mapea un nombre a un widget específico
+      // Definición de todas las rutas de navegación
       routes: {
-        // Ruta raíz: Pantalla de inicio de sesión
         '/': (_) => const LoginPage(),
-        
-        // Ruta de registro: Permite crear nuevas cuentas de usuario
         '/signup': (_) => const SignupPage(),
-        
-        // Ruta principal: Pantalla con las guías de primeros auxilios
         '/home': (_) => const HomePage(),
-        
-        // Ruta de perfil: Muestra y permite editar información del usuario
         '/profile': (_) => const ProfilePage(),
-        
-        // Ruta de administración: Panel para gestionar contenido de la app
-        // Solo accesible para usuarios con permisos de administrador
         '/admin': (_) => const AdminPanel(),
+      },
+      
+      // Manejo de rutas desconocidas
+      onUnknownRoute: (settings) {
+        return MaterialPageRoute(
+          builder: (_) => Scaffold(
+            appBar: AppBar(title: const Text('Error')),
+            body: Center(
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  const Icon(Icons.error_outline, size: 64, color: Colors.red),
+                  const SizedBox(height: 16),
+                  const Text(
+                    'Página no encontrada',
+                    style: TextStyle(fontSize: 18),
+                  ),
+                  const SizedBox(height: 24),
+                  ElevatedButton(
+                    onPressed: () => Navigator.pushReplacementNamed(_, '/'),
+                    child: const Text('Volver al inicio'),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        );
       },
     );
   }

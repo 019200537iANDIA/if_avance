@@ -1,9 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:mockito/mockito.dart';
-import 'package:primeros_auxilios_app/pages/home_page.dart';
-import 'package:primeros_auxilios_app/services/guide_service.dart';
-import 'package:primeros_auxilios_app/models/guide.dart';
+import 'package:if_avance/screens/home_page.dart';
+import 'package:if_avance/services/guide_service.dart';
+import 'package:if_avance/models/guide.dart';
 
 class MockGuideService extends Mock implements GuideService {}
 

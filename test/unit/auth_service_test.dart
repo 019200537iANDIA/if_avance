@@ -4,9 +4,14 @@ import 'package:mockito/annotations.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_auth_mocks/firebase_auth_mocks.dart';
 import 'package:fake_cloud_firestore/fake_cloud_firestore.dart';
-import 'package:primeros_auxilios_app/services/auth_service.dart';
+import 'package:if_avance/services/auth_service.dart';
 
-@GenerateMocks([User])
+// Importar el archivo generado por Mockito
+import 'auth_service_test.mocks.dart';
+
+/// Genera los mocks necesarios ejecutando:
+/// flutter pub run build_runner build --delete-conflicting-outputs
+@GenerateMocks([User, UserCredential])
 void main() {
   late AuthService authService;
   late MockFirebaseAuth mockAuth;
@@ -15,7 +20,10 @@ void main() {
   setUp(() {
     mockAuth = MockFirebaseAuth();
     fakeFirestore = FakeFirebaseFirestore();
-    authService = AuthService();
+    authService = AuthService(
+      auth: mockAuth,
+      firestore: fakeFirestore,
+    );
   });
 
   group('AuthService Tests', () {
@@ -27,10 +35,13 @@ void main() {
         displayName: 'Test User',
       );
 
+      final mockCredential = MockUserCredential();
+      when(mockCredential.user).thenReturn(mockUser);
+
       when(mockAuth.createUserWithEmailAndPassword(
         email: anyNamed('email'),
         password: anyNamed('password'),
-      )).thenAnswer((_) async => MockUserCredential(mockUser));
+      )).thenAnswer((_) async => mockCredential);
 
       final result = await authService.signUpWithEmail(
         'test@example.com',
@@ -51,10 +62,13 @@ void main() {
         displayName: 'User',
       );
 
+      final mockCredential = MockUserCredential();
+      when(mockCredential.user).thenReturn(mockUser);
+
       when(mockAuth.signInWithEmailAndPassword(
         email: 'user@example.com',
         password: 'password123',
-      )).thenAnswer((_) async => MockUserCredential(mockUser));
+      )).thenAnswer((_) async => mockCredential);
 
       final result = await authService.signInWithEmail(
         'user@example.com',

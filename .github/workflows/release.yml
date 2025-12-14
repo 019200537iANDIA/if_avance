@@ -12,10 +12,10 @@ jobs:
     
     steps:
     - name: Checkout código
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     
     - name: Configurar Java
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v4
       with:
         distribution: 'zulu'
         java-version: '17'
@@ -68,10 +68,10 @@ jobs:
     
     steps:
     - name: Checkout código
-      uses: actions/checkout@v3
+      uses: actions/checkout@v4
     
     - name: Configurar Java
-      uses: actions/setup-java@v3
+      uses: actions/setup-java@v4
       with:
         distribution: 'zulu'
         java-version: '17'
@@ -100,7 +100,7 @@ jobs:
       uses: r0adkll/upload-google-play@v1
       with:
         serviceAccountJsonPlainText: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT }}
-        packageName: com.example.primeros_auxilios_app
+        packageName: com.ifavance.app
         releaseFiles: build/app/outputs/bundle/release/app-release.aab
         track: production
         status: completed

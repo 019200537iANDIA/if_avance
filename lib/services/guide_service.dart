@@ -11,18 +11,43 @@ import '../models/guide.dart';                          // Modelo de datos Guide
 /// - Inicialización automática de guías predeterminadas
 /// 
 /// Todas las operaciones son asíncronas ya que interactúan con Firebase
+/// 
+/// IMPORTANTE: Usa inyección de dependencias para facilitar testing
 class GuideService {
   /// Instancia de Cloud Firestore
   /// 
   /// Base de datos NoSQL de Firebase donde se almacenan las guías.
   /// Firestore organiza datos en colecciones y documentos.
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+  final FirebaseFirestore _firestore;
   
   /// Nombre de la colección de guías en Firestore
   /// 
   /// Todas las guías se almacenan en esta colección.
   /// Usar una constante evita errores tipográficos y facilita cambios futuros.
   final String collection = 'guides';
+
+  /// Constructor con inyección de dependencias
+  /// 
+  /// Permite pasar una instancia personalizada para testing (mocks/fakes).
+  /// Si no se proporciona parámetro, usa la instancia por defecto.
+  /// 
+  /// Parámetro opcional:
+  /// - [firestore]: Instancia de Firestore (default: FirebaseFirestore.instance)
+  /// 
+  /// Ejemplo para producción:
+  /// ```dart
+  /// final guideService = GuideService(); // Usa instancia por defecto
+  /// ```
+  /// 
+  /// Ejemplo para testing:
+  /// ```dart
+  /// final guideService = GuideService(
+  ///   firestore: fakeFirestore,
+  /// );
+  /// ```
+  GuideService({
+    FirebaseFirestore? firestore,
+  }) : _firestore = firestore ?? FirebaseFirestore.instance;
 
   /// Obtiene todas las guías como un Stream en tiempo real
   /// 
